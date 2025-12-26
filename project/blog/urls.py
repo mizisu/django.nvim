@@ -1,7 +1,7 @@
-from django.urls import path, include
+from django.urls import include, path, re_path
 from rest_framework.routers import DefaultRouter
-from . import views
-from . import viewsets
+
+from . import views, viewsets
 
 app_name = "blog"
 
@@ -52,4 +52,69 @@ urlpatterns = [
     ),
     # API endpoints - ViewSets with router
     path("api/v1/", include(router.urls)),
+    # =========================================================================
+    # Edge Case 1: Custom HTTP method view
+    # Expected: only get() is detected, trace() and connect() are NOT detected
+    # =========================================================================
+    path("api/debug/", views.DebugAPIView.as_view(), name="api_debug"),
+    # =========================================================================
+    # Edge Case 2: View wrapped with decorator without functools.wraps
+    # Expected: bad_decorator view may show function name as 'wrapper'
+    # =========================================================================
+    path("stats/bad-decorator/", views.post_stats_bad_decorator, name="stats_bad"),
+    path("stats/good-decorator/", views.post_stats_good_decorator, name="stats_good"),
+    # =========================================================================
+    # Edge Case 5: Complex regex patterns with re_path
+    # Expected: Detected but pattern is displayed as raw regex (poor readability)
+    # =========================================================================
+    re_path(
+        r"^articles/(?P<year>[0-9]{4})/$",
+        views.post_list,
+        name="articles_by_year",
+    ),
+    re_path(
+        r"^articles/(?P<year>[0-9]{4})/(?P<month>[0-9]{2})/$",
+        views.post_list,
+        name="articles_by_month",
+    ),
+    re_path(
+        r"^articles/(?P<year>[0-9]{4})/(?P<month>[0-9]{2})/(?P<day>[0-9]{2})/$",
+        views.post_list,
+        name="articles_by_day",
+    ),
+    # More complex regex: slug + optional page number
+    re_path(
+        r"^tag/(?P<tag_slug>[-\w]+)(?:/page/(?P<page>\d+))?/$",
+        views.post_list,
+        name="posts_by_tag",
+    ),
 ]
+
+# =============================================================================
+# Edge Case 4: Dynamically generated URL patterns
+# Expected: Detected at script execution time if included in urlpatterns
+# However, conditional (if statement) patterns may be missed depending on condition
+# =============================================================================
+
+# 4-1: URL patterns generated with loop (detected)
+DYNAMIC_CATEGORIES = ["tech", "lifestyle", "news"]
+for category in DYNAMIC_CATEGORIES:
+    urlpatterns.append(
+        path(
+            f"dynamic/{category}/",
+            views.post_list,
+            name=f"dynamic_{category}",
+        )
+    )
+
+# 4-2: Conditional URL pattern - only added in DEBUG mode (detection depends on condition)
+import os
+
+if os.environ.get("DJANGO_DEBUG_URLS", "false").lower() == "true":
+    urlpatterns.append(
+        path(
+            "conditional-debug/",
+            views.post_list,
+            name="conditional_debug",
+        )
+    )

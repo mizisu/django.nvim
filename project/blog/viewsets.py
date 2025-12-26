@@ -1,3 +1,5 @@
+from functools import wraps
+
 from django.db import models
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -14,6 +16,59 @@ from .serializers import (
     PostListSerializer,
     TagSerializer,
 )
+
+
+# =============================================================================
+# Edge Case 3: Multiple decorators on @action
+# Expected: Detection fails if @action is more than 3 lines above def
+# =============================================================================
+def log_action(func):
+    """Action logging decorator"""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def rate_limit(calls_per_minute=60):
+    """Rate limiting decorator"""
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def cache_response(timeout=300):
+    """Response caching decorator"""
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def validate_params(required_params=None):
+    """Parameter validation decorator"""
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -164,3 +219,62 @@ class CommentViewSet(viewsets.ModelViewSet):
         replies = comment.replies.all()
         serializer = self.get_serializer(replies, many=True)
         return Response(serializer.data)
+
+    # =========================================================================
+    # Edge Case 3-1: 2 decorators (2 lines above def) - detected
+    # =========================================================================
+    @action(detail=True, methods=["get"])
+    @log_action
+    def activity_log_2_decorators(self, request, pk=None):
+        """2 decorators - @action is 2 lines above def (detected)"""
+        comment = self.get_object()
+        return Response({"comment_id": comment.id, "activity": "viewed"})
+
+    # =========================================================================
+    # Edge Case 3-2: 3 decorators (3 lines above def) - detected (boundary)
+    # =========================================================================
+    @action(detail=True, methods=["post"])
+    @log_action
+    @rate_limit(calls_per_minute=30)
+    def report_3_decorators(self, request, pk=None):
+        """3 decorators - @action is 3 lines above def (boundary, detected)"""
+        comment = self.get_object()
+        return Response({"comment_id": comment.id, "reported": True})
+
+    # =========================================================================
+    # Edge Case 3-3: 4 decorators (4 lines above def) - detection failure!
+    # =========================================================================
+    @action(detail=True, methods=["get"])
+    @log_action
+    @rate_limit(calls_per_minute=10)
+    @cache_response(timeout=600)
+    def detailed_stats_4_decorators(self, request, pk=None):
+        """4 decorators - @action is 4 lines above def (detection failure!)"""
+        comment = self.get_object()
+        return Response(
+            {
+                "comment_id": comment.id,
+                "likes": 0,
+                "replies_count": comment.replies.count(),
+            }
+        )
+
+    # =========================================================================
+    # Edge Case 3-4: 5 decorators (5 lines above def) - detection failure!
+    # =========================================================================
+    @action(detail=False, methods=["get"])
+    @log_action
+    @rate_limit(calls_per_minute=5)
+    @cache_response(timeout=3600)
+    @validate_params(required_params=["post_id"])
+    def analytics_5_decorators(self, request):
+        """5 decorators - @action is 5 lines above def (detection failure!)"""
+        post_id = request.query_params.get("post_id")
+        comments = self.queryset.filter(post_id=post_id)
+        return Response(
+            {
+                "post_id": post_id,
+                "total_comments": comments.count(),
+                "approved_comments": comments.filter(is_approved=True).count(),
+            }
+        )

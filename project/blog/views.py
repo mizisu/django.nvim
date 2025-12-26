@@ -1,3 +1,5 @@
+from functools import wraps
+
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views import View
@@ -8,6 +10,70 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Category, Comment, Post
+
+
+# =============================================================================
+# Edge Case 1: Custom HTTP methods (TRACE, CONNECT)
+# Expected: trace(), connect() methods are NOT detected (not in hardcoded list)
+# =============================================================================
+class DebugAPIView(APIView):
+    """Debug API view - supports non-standard methods like TRACE, CONNECT"""
+
+    def get(self, request):
+        """GET method - detected"""
+        return Response({"method": "GET", "debug": True})
+
+    def trace(self, request):
+        """TRACE method - NOT detected (not in hardcoded list)"""
+        return Response({"method": "TRACE", "headers": dict(request.headers)})
+
+    def connect(self, request):
+        """CONNECT method - NOT detected"""
+        return Response({"method": "CONNECT"})
+
+
+# =============================================================================
+# Edge Case 2: Decorator without functools.wraps
+# Expected: Original function info is lost, detection may fail
+# =============================================================================
+def bad_decorator_without_wraps(func):
+    """Bad decorator that doesn't use functools.wraps"""
+
+    def wrapper(request, *args, **kwargs):
+        # Logging logic etc.
+        return func(request, *args, **kwargs)
+
+    return wrapper  # No wraps(func) - __name__, __module__ etc. are lost
+
+
+def good_decorator_with_wraps(func):
+    """Good decorator that properly uses functools.wraps"""
+
+    @wraps(func)
+    def wrapper(request, *args, **kwargs):
+        return func(request, *args, **kwargs)
+
+    return wrapper
+
+
+@bad_decorator_without_wraps
+def post_stats_bad_decorator(request):
+    """View wrapped with bad decorator - detection may fail"""
+    stats = {
+        "total_posts": Post.objects.count(),
+        "published_posts": Post.objects.filter(status="published").count(),
+    }
+    return JsonResponse(stats)
+
+
+@good_decorator_with_wraps
+def post_stats_good_decorator(request):
+    """View wrapped with good decorator - detected correctly"""
+    stats = {
+        "total_posts": Post.objects.count(),
+        "draft_posts": Post.objects.filter(status="draft").count(),
+    }
+    return JsonResponse(stats)
 
 
 def post_list(request):
