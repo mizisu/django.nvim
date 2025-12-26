@@ -7,6 +7,7 @@ function M.setup(opts)
 
 	require("django.pickers.views").setup()
 	require("django.pickers.models").setup()
+	require("django.completions").setup()
 
 	require("django.watcher").setup()
 end
@@ -14,6 +15,7 @@ end
 function M.refresh_all()
 	require("django.pickers.views").refresh()
 	require("django.pickers.models").refresh()
+	require("django.completions").refresh()
 end
 
 function M.clear_all_cache()

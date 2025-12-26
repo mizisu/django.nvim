@@ -19,7 +19,12 @@ M.default = {
 	models = {
 		auto_refresh = {
 			on_picker_open = true,
-			file_watch_patterns = { "*/models.py", "*/models/*.py" },
+			file_watch_patterns = { "**/models.py", "**/models/*.py" },
+		},
+	},
+	completions = {
+		auto_refresh = {
+			file_watch_patterns = { "**/models.py", "**/models/*.py" },
 		},
 	},
 }

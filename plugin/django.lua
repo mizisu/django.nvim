@@ -19,6 +19,10 @@ vim.api.nvim_create_user_command("DjangoModelsRefresh", function()
 	require("django.pickers.models").refresh()
 end, {})
 
+vim.api.nvim_create_user_command("DjangoCompletionsRefresh", function()
+	require("django.completions").refresh()
+end, {})
+
 vim.api.nvim_create_user_command("DjangoRefreshAll", function()
 	require("django").refresh_all()
 end, {})

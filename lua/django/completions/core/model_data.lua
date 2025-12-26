@@ -75,6 +75,14 @@ function ModelData.clear()
 	instance = nil
 end
 
+--- Set singleton instance (for refresh)
+---@param data table
+function ModelData.set_instance(data)
+	if data then
+		instance = ModelData.new(data)
+	end
+end
+
 --- Get model by name
 ---@param model_name string
 ---@return ModelInfo|nil
