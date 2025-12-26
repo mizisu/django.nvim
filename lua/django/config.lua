@@ -27,6 +27,11 @@ M.default = {
 			file_watch_patterns = { "**/models.py", "**/models/*.py" },
 		},
 	},
+	shell = {
+		command = "shell", -- "shell", "shell_plus", "shell_plus --ipython", etc.
+		position = "right", -- "bottom", "top", "left", "right", "float"
+		env = {}, -- explicit environment variables (e.g. { DJANGO_SETTINGS_MODULE = "myproject.settings" })
+	},
 }
 
 M.current = vim.deepcopy(M.default)

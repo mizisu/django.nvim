@@ -78,6 +78,11 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
       --     file_watch_patterns = { "*/models.py", "*/models/*.py" },
       --   },
       -- },
+      -- shell = {
+      --   command = "shell",  -- "shell", "shell_plus", "shell_plus --ipython", etc.
+      --   position = "right", -- "bottom", "top", "left", "right", "float"
+      --   env = {},           -- { DJANGO_SETTINGS_MODULE = "myproject.settings" }
+      -- },
     })
   end,
 }
@@ -124,6 +129,25 @@ Automatically or manually refresh data.
 - Customizable file pattern watching
 - Refresh when opening picker
 
+### Django Shell
+
+Open Django's interactive shell directly from Neovim using Snacks.nvim terminal.
+
+**Features:**
+
+- Toggle shell with a single keymap
+- Send selected code from visual mode
+
+**Usage:**
+
+```lua
+-- In normal mode: toggle shell
+<leader>djs
+
+-- In visual mode: send selected code to shell
+<leader>djs
+```
+
 ### Commands
 
 | Command | Description |
@@ -132,8 +156,11 @@ Automatically or manually refresh data.
 | `:DjangoViewsRefresh` | Refresh views data |
 | `:DjangoModels` | Browse Django models |
 | `:DjangoModelsRefresh` | Refresh models data |
+| `:DjangoCompletionsRefresh` | Refresh completions data |
 | `:DjangoRefreshAll` | Refresh all data |
 | `:DjangoClearAllCache` | Clear all cached data |
+| `:DjangoShell` | Toggle Django shell |
+| `:DjangoShellClose` | Close Django shell |
 
 ### Default Keymaps
 
@@ -143,6 +170,7 @@ Automatically or manually refresh data.
 | `<leader>djm` | Browse Django models |
 | `<leader>djr` | Refresh all data |
 | `<leader>djc` | Clear all cached data |
+| `<leader>djs` | Toggle Django shell (normal) / Send selection (visual) |
 
 ### Picker Keybindings
 
