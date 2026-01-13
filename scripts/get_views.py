@@ -82,9 +82,11 @@ def handle_viewset(url_pattern, full_pattern, view_class, callback):
 
         if hasattr(view_class, action_name):
             action_method = getattr(view_class, action_name)
+            # Unwrap decorators to get the original function
+            unwrapped_method = inspect.unwrap(action_method)
             try:
-                method_file = inspect.getfile(action_method)
-                source_lines, start_line = inspect.getsourcelines(action_method)
+                method_file = inspect.getfile(unwrapped_method)
+                source_lines, start_line = inspect.getsourcelines(unwrapped_method)
                 # Find actual def line (skip decorators)
                 method_line = start_line
                 for i, line in enumerate(source_lines):
