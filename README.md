@@ -121,14 +121,6 @@ Intelligent autocompletion for Django QuerySet methods with full type awareness.
 
 ![ORM completions](./docs/completion.gif)
 
-### Refresh
-
-Automatically or manually refresh data.
-
-- Auto-refresh on file save
-- Customizable file pattern watching
-- Refresh when opening picker
-
 ### Django Shell
 
 Open Django's interactive shell directly from Neovim using Snacks.nvim terminal.
@@ -147,6 +139,14 @@ Open Django's interactive shell directly from Neovim using Snacks.nvim terminal.
 -- In visual mode: send selected code to shell
 <leader>djs
 ```
+
+### Refresh
+
+Automatically or manually refresh data.
+
+- Auto-refresh on file save
+- Customizable file pattern watching
+- Refresh when opening picker
 
 ### Commands
 

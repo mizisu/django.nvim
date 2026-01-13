@@ -8,6 +8,7 @@ dependencies = [
   "django>=5.2.8",
   "django-types>=0.22.0",
   "djangorestframework>=3.16.1",
+  "drf-spectacular>=0.29.0",
 ]
 
 [tool.pyright]

@@ -2,6 +2,7 @@ from functools import wraps
 
 from django.db import models
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
@@ -69,6 +70,28 @@ def validate_params(required_params=None):
         return wrapper
 
     return decorator
+
+
+# =============================================================================
+# Edge Case 4: Decorator without @wraps (drf-spectacular's extend_schema)
+# Expected: Source location should point to the actual method, not the class
+# =============================================================================
+def api_docs_comment_stats():
+    """Real @extend_schema decorator wrapped in function - simulates lemonbase pattern"""
+    return extend_schema(
+        tags=["comments"],
+        operation_id="comment_stats",
+        description="Get comment statistics",
+    )
+
+
+def api_docs_comment_detailed_info():
+    """Another @extend_schema decorator wrapped in function"""
+    return extend_schema(
+        tags=["comments"],
+        operation_id="comment_detailed_info",
+        description="Get detailed comment information",
+    )
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -181,6 +204,58 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer = PostListSerializer(posts, many=True)
         return Response(serializer.data)
 
+    # =========================================================================
+    # url_path Examples - 커스텀 URL 경로 지정
+    # =========================================================================
+
+    # 1. 기본 url_path 사용 (detail=False) - 하이픈이 포함된 URL
+    @action(detail=False, methods=["get"], url_path="latest-posts")
+    def get_latest_posts(self, request):
+        """url_path로 하이픈이 포함된 URL 생성: /posts/latest-posts/"""
+        posts = self.queryset.filter(status="published").order_by("-published_at")[:5]
+        serializer = PostListSerializer(posts, many=True)
+        return Response(serializer.data)
+
+    # 2. 중첩 경로 (detail=False) - 슬래시가 포함된 URL
+    @action(detail=False, methods=["get"], url_path="stats/summary")
+    def stats_summary(self, request):
+        """중첩된 URL 경로: /posts/stats/summary/"""
+        total = self.queryset.count()
+        published = self.queryset.filter(status="published").count()
+        return Response({"total": total, "published": published})
+
+    # 3. url_path + url_name (detail=True)
+    @action(detail=True, methods=["get"], url_path="related-posts", url_name="related")
+    def get_related_posts(self, request, slug=None):
+        """url_path와 url_name 함께 사용: /posts/{slug}/related-posts/
+        reverse('post-related', args=[slug])로 URL 생성 가능"""
+        post = self.get_object()
+        related = self.queryset.filter(
+            category=post.category, status="published"
+        ).exclude(pk=post.pk)[:5]
+        serializer = PostListSerializer(related, many=True)
+        return Response(serializer.data)
+
+    # 4. 동적 경로 파라미터 (detail=True) - regex 패턴
+    @action(detail=True, methods=["get"], url_path=r"history/(?P<year>[0-9]{4})")
+    def view_history_by_year(self, request, slug=None, year=None):
+        """동적 URL 파라미터: /posts/{slug}/history/2024/"""
+        post = self.get_object()
+        return Response(
+            {"post_id": post.id, "year": year, "message": f"Viewing history for {year}"}
+        )
+
+    # 5. 단순 url_path (detail=True) - 하이픈 URL
+    @action(detail=True, methods=["get"], url_path="reading-time")
+    def get_reading_time(self, request, slug=None):
+        """detail=True와 url_path: /posts/{slug}/reading-time/"""
+        post = self.get_object()
+        word_count = len(post.content.split()) if post.content else 0
+        reading_time = max(1, word_count // 200)  # 분당 200단어 기준
+        return Response(
+            {"reading_time_minutes": reading_time, "word_count": word_count}
+        )
+
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
@@ -278,3 +353,24 @@ class CommentViewSet(viewsets.ModelViewSet):
                 "approved_comments": comments.filter(is_approved=True).count(),
             }
         )
+
+    # =========================================================================
+    # Edge Case 4-1: @extend_schema + @action + @authentication (lemonbase pattern)
+    # =========================================================================
+    @api_docs_comment_stats()
+    @action(detail=True, methods=["get"])
+    def stats_with_schema(self, request, pk=None):
+        """@extend_schema on top, @action in middle, auth at bottom"""
+        comment = self.get_object()
+        return Response({"comment_id": comment.id})
+
+    # =========================================================================
+    # Edge Case 4-2: @extend_schema() + @action + multiple decorators
+    # =========================================================================
+    @api_docs_comment_detailed_info()
+    @action(detail=True, methods=["get"], url_path="detailed-info")
+    @log_action
+    def detailed_info(self, request, pk=None):
+        """@extend_schema on top, @action, then @log_action and @authentication"""
+        comment = self.get_object()
+        return Response({"comment_id": comment.id, "content": comment.content})
