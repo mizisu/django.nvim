@@ -45,6 +45,9 @@ M.show = picker.create_picker({
 			{ file_name, "Comment" },
 		}
 	end,
+	item_key = function(model)
+		return (model.app_label or "") .. "|" .. (model.name or "")
+	end,
 	refresh_desc = "Refresh models",
 	on_picker_open = function()
 		return config.current.models.auto_refresh.on_picker_open

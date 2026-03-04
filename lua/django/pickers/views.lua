@@ -44,6 +44,10 @@ M.show = picker.create_picker({
 			{ file_name, "Comment" },
 		}
 	end,
+	item_key = function(endpoint)
+		local action = endpoint.action or endpoint.method or ""
+		return table.concat({ endpoint.pattern or "", endpoint.view or "", action, endpoint.name or "" }, "|")
+	end,
 	refresh_desc = "Refresh views",
 	on_picker_open = function()
 		return config.current.views.auto_refresh.on_picker_open
