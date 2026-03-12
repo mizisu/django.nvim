@@ -99,6 +99,16 @@ Quickly browse and navigate through all URL patterns in your Django project.
 
 ![Views picker](./docs/views.gif)
 
+### Inline View URL Hints
+
+Show endpoint hints inline while reading Django class-based views and DRF ViewSets.
+
+- Display the root endpoint next to the class definition
+- Display `HTTP method + URL` next to handler methods
+- Uses cached `DjangoViews` data for lightweight rendering
+
+![View URL hints](./docs/view_url.png)
+
 ### Django Models Browser
 
 Search and explore all Django models in your project.

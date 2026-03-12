@@ -8,6 +8,7 @@ function M.setup(opts)
 	require("django.pickers.views").setup()
 	require("django.pickers.models").setup()
 	require("django.completions").setup()
+	require("django.annotations.views").setup()
 
 	require("django.watcher").setup()
 end
