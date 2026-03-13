@@ -223,7 +223,7 @@ function M.__pick_root_pattern(patterns)
 	local common_segments = {}
 	for index = 1, min_segment_count or 0 do
 		local segment = split_patterns[1][index]
-		if not segment or M.__is_dynamic_segment(segment) then
+		if not segment then
 			break
 		end
 
@@ -249,10 +249,6 @@ function M.__split_pattern_segments(pattern)
 	return segments
 end
 
-function M.__is_dynamic_segment(segment)
-	return segment:match("^<.+>$") ~= nil
-end
-
 function M.__build_root_pattern(common_segments, patterns)
 	if common_segments and not vim.tbl_isempty(common_segments) then
 		return "/" .. table.concat(common_segments, "/") .. "/"
@@ -273,12 +269,13 @@ function M.__render_class_annotations(bufnr, class_annotations)
 
 	for line_number, pattern in pairs(class_annotations) do
 		if line_number >= 1 and line_number <= line_count then
+			local indent = M.__get_line_indent(bufnr, line_number)
 			vim.api.nvim_buf_set_extmark(bufnr, NAMESPACE, line_number - 1, 0, {
-				virt_text = {
-					{ " # " .. pattern, "Comment" },
+				virt_lines = {
+					{
+						{ indent .. "# " .. pattern, "Comment" },
+					},
 				},
-				virt_text_pos = "eol",
-				hl_mode = "combine",
 			})
 		end
 	end
@@ -296,18 +293,19 @@ function M.__render_method_annotations(bufnr, method_annotations)
 		end)
 
 		if line_number >= 1 and line_number <= line_count then
+			local indent = M.__get_line_indent(bufnr, line_number)
 			vim.api.nvim_buf_set_extmark(bufnr, NAMESPACE, line_number - 1, 0, {
-				virt_text = M.__build_method_virt_text(items),
-				virt_text_pos = "eol",
-				hl_mode = "combine",
+				virt_lines = {
+					M.__build_method_virt_text(items, indent),
+				},
 			})
 		end
 	end
 end
 
-function M.__build_method_virt_text(items)
+function M.__build_method_virt_text(items, indent)
 	local virt_text = {
-		{ " # ", "Comment" },
+		{ indent .. "# ", "Comment" },
 	}
 
 	for index, item in ipairs(items) do
@@ -320,6 +318,13 @@ function M.__build_method_virt_text(items)
 	end
 
 	return virt_text
+end
+
+function M.__get_line_indent(bufnr, line_number)
+	local line_text = vim.api.nvim_buf_get_lines(bufnr, line_number - 1, line_number, false)[1] or ""
+	local indent = line_text:match("^(%s*)") or ""
+	local tab = vim.bo[bufnr].expandtab and string.rep(" ", vim.bo[bufnr].shiftwidth) or "\t"
+	return indent .. tab
 end
 
 function M.__method_highlight(method)
