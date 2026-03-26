@@ -48,6 +48,8 @@ def get_action_line_numbers(view_class):
             "destroy",
         ]
 
+        prev_def_idx = 0
+
         for line_idx, line in enumerate(source_lines):
             stripped = line.strip()
             if stripped.startswith("def ") and "(" in stripped:
@@ -55,12 +57,13 @@ def get_action_line_numbers(view_class):
 
                 is_standard_action = method_name in standard_actions
                 has_action_decorator = any(
-                    "@action" in source_lines[i]
-                    for i in range(max(0, line_idx - 3), line_idx)
+                    "@action" in source_lines[i] for i in range(prev_def_idx, line_idx)
                 )
 
                 if is_standard_action or has_action_decorator:
                     action_lines[method_name] = source_start_line + line_idx
+
+                prev_def_idx = line_idx + 1
 
     except Exception:
         pass
@@ -76,28 +79,10 @@ def handle_viewset(url_pattern, full_pattern, view_class, callback):
         return endpoints
 
     actions = getattr(callback, "actions", {})
+    action_line_numbers = get_action_line_numbers(view_class)
 
     for http_method, action_name in actions.items():
-        line_number = class_line
-
-        if hasattr(view_class, action_name):
-            action_method = getattr(view_class, action_name)
-            # Unwrap decorators to get the original function
-            unwrapped_method = inspect.unwrap(action_method)
-            try:
-                method_file = inspect.getfile(unwrapped_method)
-                source_lines, start_line = inspect.getsourcelines(unwrapped_method)
-                # Find actual def line (skip decorators)
-                method_line = start_line
-                for i, line in enumerate(source_lines):
-                    if line.strip().startswith("def "):
-                        method_line = start_line + i
-                        break
-                # Only use method line if it's defined in the same file (not inherited)
-                if method_line and method_file == file_path:
-                    line_number = method_line
-            except (TypeError, OSError):
-                pass
+        line_number = action_line_numbers.get(action_name, class_line)
 
         endpoints.append(
             {
