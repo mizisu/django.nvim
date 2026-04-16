@@ -63,6 +63,8 @@ function M.create_picker(config)
 	local get_item_key = config.item_key
 	local refresh_desc = config.refresh_desc or "Refresh data"
 	local get_on_picker_open = config.on_picker_open
+	local get_transform = config.transform
+	local get_filter = config.filter
 
 	local function show_picker()
 		local picker_instance = require("snacks").picker.pick({
@@ -82,6 +84,8 @@ function M.create_picker(config)
 			end,
 			preview = "file",
 			format = format_item,
+			transform = get_transform,
+			filter = get_filter,
 			actions = {
 				refresh_data = function()
 					fetcher.refresh_with_callback(script_name, cache_name, nil)
