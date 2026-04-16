@@ -293,14 +293,32 @@ function M.__render_method_annotations(bufnr, method_annotations)
 		end)
 
 		if line_number >= 1 and line_number <= line_count then
+			local annotation_line = M.__find_function_definition_end_line(bufnr, line_number)
 			local indent = M.__get_line_indent(bufnr, line_number)
-			vim.api.nvim_buf_set_extmark(bufnr, NAMESPACE, line_number - 1, 0, {
+			vim.api.nvim_buf_set_extmark(bufnr, NAMESPACE, annotation_line - 1, 0, {
 				virt_lines = {
 					M.__build_method_virt_text(items, indent),
 				},
 			})
 		end
 	end
+end
+
+function M.__find_function_definition_end_line(bufnr, line_number)
+	local line_count = vim.api.nvim_buf_line_count(bufnr)
+	if line_number < 1 or line_number > line_count then
+		return line_number
+	end
+
+	local lines = vim.api.nvim_buf_get_lines(bufnr, line_number - 1, line_count, false)
+
+	for offset, line_text in ipairs(lines) do
+		if line_text:match(":%s*(#.*)?$") then
+			return line_number + offset - 1
+		end
+	end
+
+	return line_number
 end
 
 function M.__build_method_virt_text(items, indent)
