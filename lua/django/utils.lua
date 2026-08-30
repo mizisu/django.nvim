@@ -31,4 +31,70 @@ function M.get_python_path()
 	return "python3"
 end
 
+--- Strip matching surrounding quotes from a value
+--- @param value string
+--- @return string
+local function strip_quotes(value)
+	local quoted = value:match('^"(.*)"$') or value:match("^'(.*)'$")
+	return quoted or value
+end
+
+--- Parse a .env file into a table of environment variables
+--- @param path string Path to the dotenv file
+--- @return table<string, string>
+function M.parse_dotenv(path)
+	local env = {}
+
+	if vim.fn.filereadable(path) ~= 1 then
+		return env
+	end
+
+	for _, line in ipairs(vim.fn.readfile(path)) do
+		local trimmed = vim.trim(line)
+
+		if trimmed ~= "" and not trimmed:match("^#") then
+			trimmed = trimmed:gsub("^export%s+", "")
+
+			local key, value = trimmed:match("^([%w_][%w%d_]*)%s*=%s*(.*)$")
+			if key then
+				env[key] = strip_quotes(vim.trim(value))
+			end
+		end
+	end
+
+	return env
+end
+
+--- Resolve the dotenv file path from config (relative paths are resolved against cwd)
+--- @param dotenv_path string
+--- @return string
+local function resolve_dotenv_path(dotenv_path)
+	if vim.fn.fnamemodify(dotenv_path, ":p") == dotenv_path then
+		return dotenv_path
+	end
+	return vim.fn.getcwd() .. "/" .. dotenv_path
+end
+
+--- Get the merged environment variables for running Django commands
+--- Precedence (highest last): .env file < config.shell.env
+--- @return table<string, string>
+function M.get_env()
+	local config = require("django.config").current
+	local env_cfg = config.env or {}
+	local shell_cfg = config.shell or {}
+
+	local env = {}
+
+	if env_cfg.dotenv then
+		local path = resolve_dotenv_path(env_cfg.dotenv_path or ".env")
+		env = M.parse_dotenv(path)
+	end
+
+	if shell_cfg.env and next(shell_cfg.env) then
+		env = vim.tbl_extend("force", env, shell_cfg.env)
+	end
+
+	return env
+end
+
 return M

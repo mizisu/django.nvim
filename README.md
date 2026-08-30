@@ -81,7 +81,11 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
       -- shell = {
       --   command = "shell",  -- "shell", "shell_plus", "shell_plus --ipython", etc.
       --   position = "right", -- "bottom", "top", "left", "right", "float"
-      --   env = {},           -- { DJANGO_SETTINGS_MODULE = "myproject.settings" }
+      --   env = {},           -- { DJANGO_SETTINGS_MODULE = "myproject.settings" }, always wins over dotenv
+      -- },
+      -- env = {
+      --   dotenv = false,        -- set true to load env vars from a .env file at the project root
+      --   dotenv_path = ".env",  -- path to the dotenv file, relative to the project root (cwd) or absolute
       -- },
     })
   end,
