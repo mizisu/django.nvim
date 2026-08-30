@@ -40,7 +40,13 @@ function M.run(script_name, cache_name)
 		return M.__build_command(script_name, output_path)
 	end)
 
-	return async.system({ "sh", "-c", cmd }, { text = true })
+	local opts = { text = true }
+	local env = require("django.utils").get_env()
+	if next(env) then
+		opts.env = env
+	end
+
+	return async.system({ "sh", "-c", cmd }, opts)
 end
 
 --- Count items in data (handles both arrays and dictionaries)

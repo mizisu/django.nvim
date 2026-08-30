@@ -28,8 +28,9 @@ function M.__build_opts()
 	}
 
 	-- Only include env if it has values
-	if cfg.env and next(cfg.env) then
-		opts.env = cfg.env
+	local env = utils.get_env()
+	if next(env) then
+		opts.env = env
 	end
 
 	return opts
