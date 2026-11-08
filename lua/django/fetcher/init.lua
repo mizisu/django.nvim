@@ -70,12 +70,16 @@ function M.__fetch(script_name, cache_name, opts)
 		async.wait(delay)
 	end
 
+	-- Resolve the project root once: buffer switches during the async fetch
+	-- must not change cache paths mid-flight
+	local root = require("django.utils").get_project_root()
+
 	-- Check if already fetching
 	if state.is_fetching(cache_name) then
 		if not silent then
 			vim.notify("Django " .. cache_name .. " refresh already in progress", vim.log.levels.DEBUG)
 		end
-		return cache.read(cache_name)
+		return cache.read(cache_name, root)
 	end
 
 	state.set_fetching(cache_name, true)
@@ -85,27 +89,27 @@ function M.__fetch(script_name, cache_name, opts)
 	end
 
 	-- Execute script
-	local result = executor.run(script_name, cache_name)
+	local result = executor.run(script_name, cache_name, root)
 
 	state.set_fetching(cache_name, false)
 
 	-- Process result
 	local result_obj
 	if result.code ~= 0 then
-		result_obj = executor.parse_error(cache_name)
+		result_obj = executor.parse_error(cache_name, root)
 	else
-		result_obj = executor.parse_result(cache_name)
+		result_obj = executor.parse_result(cache_name, root)
 	end
 
 	-- Handle success/failure
 	if result_obj.success then
-		cache.commit(cache_name)
+		cache.commit(cache_name, root)
 		vim.api.nvim_exec_autocmds("User", {
 			pattern = "DjangoDataRefreshed",
 			data = { cache_name = cache_name },
 		})
 	else
-		cache.discard(cache_name)
+		cache.discard(cache_name, root)
 	end
 
 	if not silent then

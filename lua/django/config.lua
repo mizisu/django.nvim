@@ -1,6 +1,7 @@
 local M = {}
 
 M.default = {
+	python = nil, -- string|string[]: explicit interpreter, e.g. "/path/.venv/bin/python" or { "uv", "run", "python" }
 	views = {
 		auto_refresh = {
 			on_picker_open = true,

@@ -14,16 +14,18 @@ end
 --- Build shell command to execute Python script
 --- @param script_name string
 --- @param output_path string
+--- @param root string|nil Project root override
 --- @return string
-function M.__build_command(script_name, output_path)
+function M.__build_command(script_name, output_path, root)
+	local utils = require("django.utils")
 	local script_path = M.__get_script_path(script_name)
-	local python_path = require("django.utils").get_python_path()
-	local cwd = vim.fn.getcwd()
+	local python_cmd = utils.get_python_command_string()
+	local cwd = root or utils.get_project_root() or vim.fn.getcwd()
 
 	return string.format(
 		"cd %s && %s %s > %s 2>&1",
 		vim.fn.shellescape(cwd),
-		vim.fn.shellescape(python_path),
+		python_cmd,
 		vim.fn.shellescape(script_path),
 		vim.fn.shellescape(output_path)
 	)
@@ -33,11 +35,12 @@ end
 --- Must be called within async.run()
 --- @param script_name string
 --- @param cache_name string
+--- @param root string|nil Project root override
 --- @return table result { code: number }
-function M.run(script_name, cache_name)
+function M.run(script_name, cache_name, root)
 	local async = require("django.async")
-	local cmd = cache.build_output_command(cache_name, function(output_path)
-		return M.__build_command(script_name, output_path)
+	local cmd = cache.build_output_command(cache_name, root, function(output_path)
+		return M.__build_command(script_name, output_path, root)
 	end)
 
 	return async.system({ "sh", "-c", cmd }, { text = true })
@@ -55,9 +58,10 @@ end
 
 --- Parse result from temp file
 --- @param cache_name string
+--- @param root string|nil Project root override
 --- @return table result { success: boolean, message: string, level: number, data: table|nil }
-function M.parse_result(cache_name)
-	local content = cache.read_temp_lines(cache_name)
+function M.parse_result(cache_name, root)
+	local content = cache.read_temp_lines(cache_name, root)
 	local ok, data = pcall(vim.json.decode, table.concat(content, "\n"))
 
 	if not ok then
@@ -90,9 +94,10 @@ end
 
 --- Parse error from temp file
 --- @param cache_name string
+--- @param root string|nil Project root override
 --- @return table result { success: boolean, message: string, level: number, data: nil }
-function M.parse_error(cache_name)
-	local error_output = cache.read_temp_lines(cache_name)
+function M.parse_error(cache_name, root)
+	local error_output = cache.read_temp_lines(cache_name, root)
 
 	return {
 		success = false,
