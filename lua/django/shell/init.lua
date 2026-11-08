@@ -13,7 +13,7 @@ end
 --- @return string Command string
 function M.__build_command()
 	local cfg = M.__get_config()
-	local python = utils.get_python_path()
+	local python = utils.get_python_command_string()
 	local command = cfg.command or "shell"
 
 	return python .. " manage.py " .. command
@@ -26,6 +26,11 @@ function M.__build_opts()
 	local opts = {
 		win = { position = cfg.position or "bottom" },
 	}
+
+	local root = utils.get_project_root()
+	if root then
+		opts.cwd = root
+	end
 
 	-- Only include env if it has values
 	if cfg.env and next(cfg.env) then
@@ -76,7 +81,8 @@ function M.close()
 	end
 
 	local cmd = M.__build_command()
-	local term = Snacks.terminal.get(cmd, { create = false })
+	local opts = vim.tbl_extend("force", M.__build_opts(), { create = false })
+	local term = Snacks.terminal.get(cmd, opts)
 	if term then
 		term:hide()
 	end
